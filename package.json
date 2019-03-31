@@ -5,13 +5,14 @@
 	"description": "",
 	"version": "0.0.1",
 	"engines": {
-		"vscode": "^1.32.0"
+		"vscode": "^1.31.0"
 	},
 	"categories": [
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:extension.mdReadmeTableOfContents"
+		"onCommand:extension.mdReadmeTableOfContents",
+		"onCommand:extension.sqlGenerateExtendedPropertyComment"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -19,6 +20,10 @@
 			{
 				"command": "extension.mdReadmeTableOfContents",
 				"title": "Markdown: Generate table of contents"
+			},
+			{
+				"command": "extension.sqlGenerateExtendedPropertyComment",
+				"title": "SQL: Generte extended property comment"
 			}
 		]
 	},
