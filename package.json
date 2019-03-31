@@ -1,6 +1,7 @@
 {
 	"name": "markdown-table-of-contents",
-	"displayName": "markdown-table-of-contents",
+	"displayName": "Generate table of contents for markdown",
+	"publisher": "dkultasev",
 	"description": "",
 	"version": "0.0.1",
 	"engines": {
@@ -34,5 +35,9 @@
 		"tslint": "^5.12.1",
 		"@types/node": "^10.12.21",
 		"@types/mocha": "^2.2.42"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/dkultasev/vscode-markdown-toc-generator.git"
 	}
 }

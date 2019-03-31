@@ -36,9 +36,9 @@ export function activate(context: vscode.ExtensionContext) {
 				let tag = header[1],
 					name = header[2];
 
-				if (tag.indexOf('subsubheader') > 0) {
+				if (tag.indexOf('subsubheader') >= 0) {
 					headers.push(`\t* ##### [${name}](#${tag})`);
-				} else if (tag.indexOf('subheader') > 0) {
+				} else if (tag.indexOf('subheader') >= 0) {
 					headers.push(`* #### [${name}](#${tag})`);
 				} else {
 					headers.push(` ### [${name}](#${tag})`);
