@@ -77,13 +77,13 @@ export function activate(context: vscode.ExtensionContext) {
 			objectName = tmp[objectNameIndex].replace('.sql', ''),
 			extProp = `
 EXEC sys.sp_addextendedproperty @name = 'MS_Description'
-\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t, @value = 'ENTER YOUR COMMENT HERE'
-\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t, @level0type = 'SCHEMA'
-\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t, @level0name = '${schemaName}'
-\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t, @level1type = '${objectType.toUpperCase()}'
-\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t, @level1name = '${objectName}'
-\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t, @level2type = NULL
-\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t, @level2name = NULL;	
+                              , @value = 'ENTER YOUR COMMENT HERE'
+                              , @level0type = 'SCHEMA'
+                              , @level0name = '${schemaName}'
+                              , @level1type = '${objectType.toUpperCase()}'
+                              , @level1name = '${objectName}'
+                              , @level2type = NULL
+                              , @level2name = NULL;	
 GO`;
 		const position = editor.selection.active;
 		let newPosition = position.with(position.line, 0);
