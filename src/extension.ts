@@ -73,7 +73,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		let schemaName = tmp[schemaIndex],
-			objectType = tmp[objectTypeIndex].substring(0, tmp[1].length - 1),
+			objectType = tmp[objectTypeIndex].substring(0, tmp[objectTypeIndex].length - 1),
 			objectName = tmp[objectNameIndex].replace('.sql', ''),
 			extProp = `
 EXEC sys.sp_addextendedproperty @name = 'MS_Description'
