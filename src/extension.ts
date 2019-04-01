@@ -59,10 +59,22 @@ export function activate(context: vscode.ExtensionContext) {
 		if (!editor) {
 			return;
 		}
-		let tmp = editor.document.fileName.replace('e:\\Source\\rdb-custom\\rdb_custom\\Schemas\\', '').split('\\');
-		let schemaName = tmp[0],
-			objectType = tmp[1].substring(0, tmp[1].length - 1),
-			objectName = tmp[2].replace('.sql', ''),
+		let tmp = editor.document.fileName.split('\\');
+		// let tmp = editor.document.fileName.replace('e:\\Source\\rdb-custom\\rdb_custom\\Schemas\\', '').split('\\');
+		let schemaIndex = 0,
+			objectTypeIndex = 0,
+			objectNameIndex = 0,
+			splitSize = tmp.length;
+
+		if (tmp[splitSize - 4] === 'Schemas') {
+			schemaIndex = splitSize - 3;
+			objectTypeIndex = splitSize - 2;
+			objectNameIndex = splitSize - 1;
+		}
+
+		let schemaName = tmp[schemaIndex],
+			objectType = tmp[objectTypeIndex].substring(0, tmp[1].length - 1),
+			objectName = tmp[objectNameIndex].replace('.sql', ''),
 			extProp = `
 EXEC sys.sp_addextendedproperty @name = 'MS_Description'
 \t\t\t\t\t\t\t\t\t\t\t\t\t\t\t, @value = 'ENTER YOUR COMMENT HERE'
