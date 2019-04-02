@@ -23,7 +23,7 @@
 			},
 			{
 				"command": "extension.sqlGenerateExtendedPropertyComment",
-				"title": "SQL: Generte extended property comment"
+				"title": "SQL: Generate extended property comment"
 			}
 		]
 	},
