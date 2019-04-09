@@ -12,18 +12,99 @@
 	],
 	"activationEvents": [
 		"onCommand:extension.mdReadmeTableOfContents",
+		"onCommand:extension.gitInitialCommitMessageClipboard",
+		"onCommand:extension.ssdtAddToProject",
+		"onCommand:extension.ssdtBuildProject",
+		"onCommand:extension.sqlGenerateYAMLComment",
 		"onCommand:extension.sqlGenerateExtendedPropertyComment"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
+		"configuration": {
+			"title": "SSDT",
+			"properties": {
+				"markdown-table-of-contents.userFullName": {
+					"type": [
+						"string",
+						"null"
+					],
+					"default": "CHANGE_TO_YOUR_NAME_IN_WORKSPACE_SETTINGS",
+					"description": "Who is the boss?"
+				},
+				"markdown-table-of-contents.projFile": {
+					"type": [
+						"string",
+						"null"
+					],
+					"default": null,
+					"description": "Temp setting used for tasks"
+				},
+				"markdown-table-of-contents.msBuildPath": {
+					"type": [
+						"string",
+						"null"
+					],
+					"default": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\MSBuild\\15.0\\Bin\\amd64\\MSBuild.exe",
+					"description": "Path to MSBuild.exe executable"
+				}
+			}
+		},
 		"commands": [
 			{
 				"command": "extension.mdReadmeTableOfContents",
 				"title": "Markdown: Generate table of contents"
 			},
 			{
+				"command": "extension.gitInitialCommitMessageClipboard",
+				"title": "Git: Copy Jira issue to clipboard"
+			},
+			{
+				"command": "extension.ssdtAddToProject",
+				"title": "SSDT: Add file to project"
+			},
+			{
+				"command": "extension.ssdtBuildProject",
+				"title": "SSDT: Build Project"
+			},
+			{
+				"command": "extension.sqlGenerateYAMLComment",
+				"title": "YAML: Generate comment header"
+			},
+			{
 				"command": "extension.sqlGenerateExtendedPropertyComment",
 				"title": "SQL: Generate extended property comment"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "extension.mdReadmeTableOfContents",
+				"key": "ctrl+k,ctrl+shift+t",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "extension.gitInitialCommitMessageClipboard",
+				"key": "ctrl+k,ctrl+shift+j",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "extension.ssdtAddToProject",
+				"key": "ctrl+k,ctrl+shift+a",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "extension.ssdtBuildProject",
+				"key": "ctrl+k,ctrl+shift+b",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "extension.sqlGenerateYAMLComment",
+				"key": "ctrl+k,ctrl+shift+y",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "extension.sqlGenerateExtendedPropertyComment",
+				"key": "ctrl+k,ctrl+shift+e",
+				"when": "editorTextFocus"
 			}
 		]
 	},
@@ -36,7 +117,7 @@
 	},
 	"devDependencies": {
 		"typescript": "^3.3.1",
-		"vscode": "^1.1.28",
+		"vscode": "^1.1.25",
 		"tslint": "^5.12.1",
 		"@types/node": "^10.12.21",
 		"@types/mocha": "^2.2.42"
@@ -44,5 +125,13 @@
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/dkultasev/vscode-markdown-toc-generator.git"
+	},
+	"dependencies": {
+		"@types/file-saver": "^2.0.0",
+		"clipboardy": "^1.2.3",
+		"file-saver": "^2.0.1",
+		"iconv-lite": "^0.4.24",
+		"xml2js": "^0.4.19",
+		"xmldom": "^0.1.27"
 	}
 }
