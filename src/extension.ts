@@ -82,6 +82,82 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(disposable);
 
+	disposable = vscode.commands.registerCommand('extension.ssdtdDelFromProject', () => {
+
+		let msBuildPath = vscode.workspace.getConfiguration('markdown-table-of-contents').get('msBuildPath');
+
+		if (msBuildPath === undefined) {
+			vscode.window.showErrorMessage('MSBuild.exe path is not set in the extension settings.');
+			return;
+		}
+
+		let editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			return;
+		}
+
+		let fileName = editor.document.fileName;
+		let s: SSDT = new SSDT(msBuildPath.toString());
+		let projFilePath = s.getProjectConfigurationPath(fileName);
+
+		var parser = require('xml2js');
+
+		require('fs').readFile(projFilePath, 'utf8', function (err: string, content: string) {
+			let proj = projFilePath;
+			if (err) {
+				let a = 0;
+			}
+
+			parser.parseString(content, function (err: string, result: any) {
+
+				if (!result.Project) {
+					return;
+				}
+
+				let items = result.Project.ItemGroup[1].Build;
+				let wspc = vscode.workspace.rootPath;
+
+				if (!wspc) {
+					return;
+				}
+
+				if (!fileName) {
+					return;
+				}
+				let tmp = fileName.replace(wspc, '').split('\\', 2);
+				let fileEntry = fileName.replace(wspc, '').substring(tmp[1].length + 2);
+
+				let isFound = false;
+				result.Project.ItemGroup[1].Build = items.filter(function (obj: any) {
+					if (obj.$.Include === fileEntry) {
+						isFound = true;
+					}
+					return obj.$.Include !== fileEntry;
+				});
+
+				if (isFound) {
+					var xml2js = require('xml2js');
+
+					var builder = new xml2js.Builder();
+					var xml = builder.buildObject(result);
+
+					require('fs').writeFile(projFilePath, xml, function (err: string) {
+						if (err) {
+							vscode.window.showErrorMessage('Project file can\'t be modified');
+							console.log(err);
+							return;
+						}
+						vscode.window.showInformationMessage(`${fileEntry} is removed from project.`);
+					});
+				} else {
+					vscode.window.showWarningMessage(`${fileEntry} is not found in the project.`);
+				}
+			});
+		});
+	});
+
+	context.subscriptions.push(disposable);
+
 	disposable = vscode.commands.registerCommand('extension.ssdtBuildProject', () => {
 		let msBuildPath = vscode.workspace.getConfiguration('markdown-table-of-contents').get('msBuildPath');
 
