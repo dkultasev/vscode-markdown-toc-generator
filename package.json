@@ -137,9 +137,7 @@
 		"url": "https://github.com/dkultasev/vscode-markdown-toc-generator.git"
 	},
 	"dependencies": {
-		"@types/file-saver": "^2.0.0",
 		"clipboardy": "^1.2.3",
-		"file-saver": "^2.0.1",
 		"iconv-lite": "^0.4.24",
 		"xml2js": "^0.4.19",
 		"xmldom": "^0.1.27"

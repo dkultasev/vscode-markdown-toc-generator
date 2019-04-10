@@ -4,156 +4,130 @@ import * as vscode from 'vscode';
 export function activate(context: vscode.ExtensionContext) {
 
 	let disposable = vscode.commands.registerCommand('extension.ssdtAddToProject', () => {
+		try {
+			let msBuildPath = vscode.workspace.getConfiguration('markdown-table-of-contents').get('msBuildPath');
 
-		let msBuildPath = vscode.workspace.getConfiguration('markdown-table-of-contents').get('msBuildPath');
-
-		if (msBuildPath === undefined) {
-			vscode.window.showErrorMessage('MSBuild.exe path is not set in the extension settings.');
-			return;
-		}
-
-		let editor = vscode.window.activeTextEditor;
-		if (!editor) {
-			return;
-		}
-
-		let fileName = editor.document.fileName;
-		let s: SSDT = new SSDT(msBuildPath.toString());
-		let projFilePath = s.getProjectConfigurationPath(fileName);
-
-		var parser = require('xml2js');
-
-		require('fs').readFile(projFilePath, 'utf8', function (err: string, content: string) {
-			let proj = projFilePath;
-			if (err) {
-				let a = 0;
+			if (msBuildPath === undefined) {
+				vscode.window.showErrorMessage('MSBuild.exe path is not set in the extension settings.');
+				return;
 			}
 
-			parser.parseString(content, function (err: string, result: any) {
-
-				if (!result.Project) {
-					return;
-				}
-
-				let items = result.Project.ItemGroup[1].Build;
-				let wspc = vscode.workspace.rootPath;
-
-				if (!wspc) {
-					return;
-				}
-
-				if (!fileName) {
-					return;
-				}
-				let tmp = fileName.replace(wspc, '').split('\\', 2);
-				let fileEntry = fileName.replace(wspc, '').substring(tmp[1].length + 2);
-
-				for (let obj of items) {
-					if (obj.$.Include === fileEntry) {
-						vscode.window.showWarningMessage(`${fileEntry} already exists.`);
-						return;
-					}
-				}
-
-				let newItem = { ...items[0], $: { ...items[0].$ } };
-
-				newItem.$.Include = fileEntry;
-				items.push(newItem);
-
-				const ordered: any = {};
-				result.Project.ItemGroup[1].Build = items.sort((a: any, b: any) => (a.$.Include > b.$.Include) ? 1 : -1);
-
-				var xml2js = require('xml2js');
-
-				var builder = new xml2js.Builder();
-				var xml = builder.buildObject(result);
-
-				require('fs').writeFile(projFilePath, xml, function (err: string) {
-					if (err) {
-						vscode.window.showErrorMessage('Project file can\'t be modified');
-						console.log(err);
-						return;
-					}
-					vscode.window.showInformationMessage(`${fileEntry} is added to project.`);
-				});
-			});
-		});
-	});
-
-	context.subscriptions.push(disposable);
-
-	disposable = vscode.commands.registerCommand('extension.ssdtdDelFromProject', () => {
-
-		let msBuildPath = vscode.workspace.getConfiguration('markdown-table-of-contents').get('msBuildPath');
-
-		if (msBuildPath === undefined) {
-			vscode.window.showErrorMessage('MSBuild.exe path is not set in the extension settings.');
-			return;
-		}
-
-		let editor = vscode.window.activeTextEditor;
-		if (!editor) {
-			return;
-		}
-
-		let fileName = editor.document.fileName;
-		let s: SSDT = new SSDT(msBuildPath.toString());
-		let projFilePath = s.getProjectConfigurationPath(fileName);
-
-		var parser = require('xml2js');
-
-		require('fs').readFile(projFilePath, 'utf8', function (err: string, content: string) {
-			let proj = projFilePath;
-			if (err) {
-				let a = 0;
+			let editor = vscode.window.activeTextEditor;
+			if (!editor) {
+				return;
 			}
 
-			parser.parseString(content, function (err: string, result: any) {
+			let fileName = editor.document.fileName;
+			let s: SSDT = new SSDT(msBuildPath.toString());
+			let projFilePath = s.getProjectConfigurationPath(fileName);
 
-				if (!result.Project) {
+			var parser = require('xml2js');
+
+			require('fs').readFile(projFilePath, 'utf8', function (err: string, content: string) {
+				if (err) {
+					let a = 0;
+				}
+				let lines: string[] = [];
+
+				if (!projFilePath) {
 					return;
 				}
-
-				let items = result.Project.ItemGroup[1].Build;
-				let wspc = vscode.workspace.rootPath;
-
-				if (!wspc) {
-					return;
-				}
-
-				if (!fileName) {
-					return;
-				}
-				let tmp = fileName.replace(wspc, '').split('\\', 2);
-				let fileEntry = fileName.replace(wspc, '').substring(tmp[1].length + 2);
-
-				let isFound = false;
-				result.Project.ItemGroup[1].Build = items.filter(function (obj: any) {
-					if (obj.$.Include === fileEntry) {
-						isFound = true;
+				let isAdded = false;
+				for (let line of content.split('\n')) {
+					if (line.indexOf('<Build Include=') >= 0 && !isAdded) {
+						let t = projFilePath.split('\\');
+						let repl = t.slice(0, t.length - 1).join('\\') + '\\';
+						let fileEntry = `    <Build Include="${fileName.replace(repl, '')}" />`;
+						if (fileEntry.trim() === line.trim()) {
+							vscode.window.showWarningMessage(`${fileName} already exists.`);
+							return;
+						}
+						if (fileEntry.trim() < line.trim()) {
+							lines.push(fileEntry);
+							isAdded = true;
+						}
 					}
-					return obj.$.Include !== fileEntry;
-				});
-
-				if (isFound) {
-					var xml2js = require('xml2js');
-
-					var builder = new xml2js.Builder();
-					var xml = builder.buildObject(result);
-
-					require('fs').writeFile(projFilePath, xml, function (err: string) {
+					lines.push(line);
+				}
+				if (isAdded) {
+					require('fs').writeFile(projFilePath, lines.join('\n'), function (err: string) {
 						if (err) {
 							vscode.window.showErrorMessage('Project file can\'t be modified');
 							console.log(err);
 							return;
 						}
-						vscode.window.showInformationMessage(`${fileEntry} is removed from project.`);
+						vscode.window.showInformationMessage(`${fileName} is added to project.`);
 					});
-				} else {
-					vscode.window.showWarningMessage(`${fileEntry} is not found in the project.`);
 				}
 			});
-		});
+		} catch (e) {
+			vscode.window.showErrorMessage(e);
+		}
+	});
+
+	context.subscriptions.push(disposable);
+
+	disposable = vscode.commands.registerCommand('extension.ssdtdDelFromProject', () => {
+		try {
+			let msBuildPath = vscode.workspace.getConfiguration('markdown-table-of-contents').get('msBuildPath');
+
+			if (msBuildPath === undefined) {
+				vscode.window.showErrorMessage('MSBuild.exe path is not set in the extension settings.');
+				return;
+			}
+
+			let editor = vscode.window.activeTextEditor;
+			if (!editor) {
+				return;
+			}
+
+			let fileName = editor.document.fileName;
+			let s: SSDT = new SSDT(msBuildPath.toString());
+			let projFilePath = s.getProjectConfigurationPath(fileName);
+
+			var parser = require('xml2js');
+
+			require('fs').readFile(projFilePath, 'utf8', function (err: string, content: string) {
+				if (err) {
+					let a = 0;
+				}
+
+				let lines: string[] = [];
+
+				if (!projFilePath) {
+					return;
+				}
+				let isDeleted = false;
+
+				for (let line of content.split('\n')) {
+					if (line.indexOf('<Build Include=') >= 0 && !isDeleted) {
+						let t = projFilePath.split('\\');
+						let repl = t.slice(0, t.length - 1).join('\\') + '\\';
+						let fileEntry = `    <Build Include="${fileName.replace(repl, '')}" />`;
+						if (fileEntry.trim() === line.trim()) {
+							isDeleted = true;
+							continue;
+						}
+					}
+					lines.push(line);
+				}
+
+				if (isDeleted) {
+					require('fs').writeFile(projFilePath, lines.join('\n'), function (err: string) {
+						if (err) {
+							vscode.window.showErrorMessage('Project file can\'t be modified');
+							console.log(err);
+							return;
+						}
+						vscode.window.showInformationMessage(`${fileName} is added to project.`);
+					});
+				} else {
+					vscode.window.showWarningMessage(`${fileName} is not found in the project.`);
+				}
+			});
+		} catch (e) {
+			vscode.window.showErrorMessage(e);
+		}
 	});
 
 	context.subscriptions.push(disposable);
