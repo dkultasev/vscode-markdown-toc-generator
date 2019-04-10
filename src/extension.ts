@@ -400,11 +400,23 @@ class SSDT {
 	}
 
 	public getProjectConfigurationPath(locationFolder: string) {
+		const path = require('path');
+		const fs = require('fs');
+		let result = false;
 		while (locationFolder.indexOf('\\') >= 0) {
 			let tmp = locationFolder.split('\\');
-			let projectFile = locationFolder + '\\' + tmp[tmp.length - 1] + ".sqlproj";
-
-			if (require('fs').existsSync(projectFile)) {
+			let projectFile = '';
+			
+			let workingDir = path.dirname(locationFolder);
+			let dirs = fs.readdirSync(workingDir);
+			for (let file of dirs) {
+				if (file.indexOf('.sqlproj') >= 0) {
+						result = true;
+						projectFile = file;
+						return `${workingDir}\\${file}`;
+			}
+		}
+		    if (require('fs').existsSync(projectFile)) {
 				return projectFile;
 			}
 
