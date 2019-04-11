@@ -15,7 +15,7 @@
 		"onCommand:extension.gitInitialCommitMessageClipboard",
 		"onCommand:extension.ssdtAddToProject",
 		"onCommand:extension.ssdtdDelFromProject",
-		"onCommand:extension.ssdtBuildProject",
+		"onCommand:extension.bitBucketOpenPullRequestInBrowser",
 		"onCommand:extension.sqlGenerateYAMLComment",
 		"onCommand:extension.sqlGenerateExtendedPropertyComment"
 	],
@@ -68,6 +68,10 @@
 				"title": "SSDT: Delete file from project"
 			},
 			{
+				"command": "extension.bitBucketOpenPullRequestInBrowser",
+				"title": "Bitbucket: Open pull request in browser"
+			},
+			{
 				"command": "extension.ssdtBuildProject",
 				"title": "SSDT: Build Project"
 			},
@@ -98,6 +102,11 @@
 			},
 			{
 				"command": "extension.ssdtdDelFromProject",
+				"key": "ctrl+k,ctrl+shift+d",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "extension.bitBucketOpenPullRequestInBrowser",
 				"key": "ctrl+k,ctrl+shift+d",
 				"when": "editorTextFocus"
 			},
@@ -137,8 +146,11 @@
 		"url": "https://github.com/dkultasev/vscode-markdown-toc-generator.git"
 	},
 	"dependencies": {
+		"child_process": "^1.0.2",
 		"clipboardy": "^1.2.3",
+		"fs": "0.0.1-security",
 		"iconv-lite": "^0.4.24",
+		"path": "^0.12.7",
 		"xml2js": "^0.4.19",
 		"xmldom": "^0.1.27"
 	}

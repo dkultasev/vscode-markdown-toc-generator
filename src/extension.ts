@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import { exec } from 'child_process';
+import { dirname }  from 'path';
 
 
 export function activate(context: vscode.ExtensionContext) {
@@ -128,6 +130,28 @@ export function activate(context: vscode.ExtensionContext) {
 		} catch (e) {
 			vscode.window.showErrorMessage(e);
 		}
+	});
+
+	context.subscriptions.push(disposable);
+
+	disposable = vscode.commands.registerCommand('extension.bitBucketOpenPullRequestInBrowser', () => {
+
+			let editor = vscode.window.activeTextEditor;
+			if (!editor) {
+			return;
+			}
+
+		exec('git rev-parse --abbrev-ref HEAD', {
+			cwd: dirname(editor.document.fileName)
+		}, (err: (Error & { code?: string | number }) | null, branch: string, stderr: string) => {
+			let project = 'SQLSRVRRDB';
+			let repo = 'sql-server-rdb-databases';
+			
+			let url = `http://bitbucket.timepayment.com:7990/projects/${project}/repos/${repo}/compare/commits?sourceBranch=refs/heads/${branch}`;
+			vscode.env.openExternal(vscode.Uri.parse(url));
+		});
+
+
 	});
 
 	context.subscriptions.push(disposable);
