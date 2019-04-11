@@ -22,6 +22,7 @@
 	"main": "./out/extension.js",
 	"contributes": {
 		"configuration": {
+			"type": "object",
 			"title": "SSDT",
 			"properties": {
 				"markdown-table-of-contents.userFullName": {
@@ -40,13 +41,28 @@
 					"default": null,
 					"description": "Temp setting used for tasks"
 				},
-				"markdown-table-of-contents.msBuildPath": {
-					"type": [
-						"string",
-						"null"
-					],
-					"default": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Enterprise\\MSBuild\\15.0\\Bin\\amd64\\MSBuild.exe",
-					"description": "Path to MSBuild.exe executable"
+				"markdown-table-of-contents.bitbucketRepositories": {
+					"type": "array",
+					"items":  {
+						"type": "object",
+						"title": "inner objects",
+						"properties": {
+							"repository": {
+								"type": "string",
+								"description": "Bitbucket repository"
+							},
+							"folder": {
+								"type": "string",
+								"description": "Project folder"
+							},
+							"project": {
+								"type": "string",
+								"description": "Bitbucket project"
+							}
+						},
+						"default": [],
+						"description": "Bitbucket configuration"
+					}
 				}
 			}
 		},
@@ -107,7 +123,7 @@
 			},
 			{
 				"command": "extension.bitBucketOpenPullRequestInBrowser",
-				"key": "ctrl+k,ctrl+shift+d",
+				"key": "ctrl+k,ctrl+shift+p",
 				"when": "editorTextFocus"
 			},
 			{
