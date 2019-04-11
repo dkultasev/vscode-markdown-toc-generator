@@ -11,55 +11,13 @@ export function activate(context: vscode.ExtensionContext) {
 				vscode.window.showErrorMessage('MSBuild.exe path is not set in the extension settings.');
 				return;
 			}
-
 			let editor = vscode.window.activeTextEditor;
 			if (!editor) {
 				return;
 			}
 
-			let fileName = editor.document.fileName;
-			let s: SSDT = new SSDT(msBuildPath.toString());
-			let projFilePath = s.getProjectConfigurationPath(fileName);
+			new SSDT(msBuildPath.toString()).addFileToProject(editor.document.fileName);
 
-			var parser = require('xml2js');
-
-			require('fs').readFile(projFilePath, 'utf8', function (err: string, content: string) {
-				if (err) {
-					let a = 0;
-				}
-				let lines: string[] = [];
-
-				if (!projFilePath) {
-					return;
-				}
-				let isAdded = false;
-				for (let line of content.split('\n')) {
-					if (line.indexOf('<Build Include=') >= 0 && !isAdded) {
-						let t = projFilePath.split('\\');
-						let repl = t.slice(0, t.length - 1).join('\\') + '\\';
-						let fileEntry = `    <Build Include="${fileName.replace(repl, '')}" />`;
-						if (fileEntry.trim() === line.trim()) {
-							vscode.window.showWarningMessage(`${fileName} already exists.`);
-							return;
-						}
-						if (fileEntry.trim() < line.trim()) {
-							lines.push(fileEntry);
-							isAdded = true;
-						}
-					}
-					lines.push(line);
-				}
-				if (isAdded) {
-					require('fs').writeFile(projFilePath, lines.join('\n'), function (err: string) {
-						if (err) {
-							vscode.window.showErrorMessage('Project file can\'t be modified');
-							console.log(err);
-							return;
-						}
-						vscode.window.showInformationMessage(`${fileName} is added to project.`);
-					});
-				}
-			});
 		} catch (e) {
 			vscode.window.showErrorMessage(e);
 		}
@@ -82,74 +40,11 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 
 			let fileName = editor.document.fileName;
-			let s: SSDT = new SSDT(msBuildPath.toString());
-			let projFilePath = s.getProjectConfigurationPath(fileName);
+			new SSDT(msBuildPath.toString()).deleteFileFromProject(editor.document.fileName);
 
-			var parser = require('xml2js');
-
-			require('fs').readFile(projFilePath, 'utf8', function (err: string, content: string) {
-				if (err) {
-					let a = 0;
-				}
-
-				let lines: string[] = [];
-
-				if (!projFilePath) {
-					return;
-				}
-				let isDeleted = false;
-
-				for (let line of content.split('\n')) {
-					if (line.indexOf('<Build Include=') >= 0 && !isDeleted) {
-						let t = projFilePath.split('\\');
-						let repl = t.slice(0, t.length - 1).join('\\') + '\\';
-						let fileEntry = `    <Build Include="${fileName.replace(repl, '')}" />`;
-						if (fileEntry.trim() === line.trim()) {
-							isDeleted = true;
-							continue;
-						}
-					}
-					lines.push(line);
-				}
-
-				if (isDeleted) {
-					require('fs').writeFile(projFilePath, lines.join('\n'), function (err: string) {
-						if (err) {
-							vscode.window.showErrorMessage('Project file can\'t be modified');
-							console.log(err);
-							return;
-						}
-						vscode.window.showInformationMessage(`${fileName} is added to project.`);
-					});
-				} else {
-					vscode.window.showWarningMessage(`${fileName} is not found in the project.`);
-				}
-			});
 		} catch (e) {
 			vscode.window.showErrorMessage(e);
 		}
-	});
-
-	context.subscriptions.push(disposable);
-
-	disposable = vscode.commands.registerCommand('extension.ssdtBuildProject', () => {
-		let msBuildPath = vscode.workspace.getConfiguration('markdown-table-of-contents').get('msBuildPath');
-
-		if (msBuildPath === undefined) {
-			vscode.window.showErrorMessage('MSBuild.exe path is not set in the extension settings.');
-			return;
-		}
-		let s: SSDT = new SSDT(msBuildPath.toString());
-		let folder = 'E:\\Source\\rdb-custom\\rdb_custom\\Schemas\\dbo\\Functions';
-		let projFile = s.getProjectConfigurationPath(folder);
-		vscode.workspace.getConfiguration('markdown-table-of-contents').set('projFile', projFile);
-		let projFile2 = vscode.workspace.getConfiguration('markdown-table-of-contents').get('projFile');
-		vscode.commands.executeCommand("workbench.action.tasks.runTask", "SSDT build");
-
-		// vscode.window.createOutputChannel("SSDT build");
-		// s.build(folder);
-		let a = 0;
-
 	});
 
 	context.subscriptions.push(disposable);
@@ -391,37 +286,120 @@ class SSDT {
 				console.log(err);
 				return;
 			}
-
-			let a = 0;
-
 		});
-
-		let a = 0;
 	}
 
-	public getProjectConfigurationPath(locationFolder: string) {
+	private getProjectConfigurationPath(locationFolder: string) {
 		const path = require('path');
 		const fs = require('fs');
 		let result = false;
 		while (locationFolder.indexOf('\\') >= 0) {
 			let tmp = locationFolder.split('\\');
 			let projectFile = '';
-			
+
 			let workingDir = path.dirname(locationFolder);
 			let dirs = fs.readdirSync(workingDir);
 			for (let file of dirs) {
 				if (file.indexOf('.sqlproj') >= 0) {
-						result = true;
-						projectFile = file;
-						return `${workingDir}\\${file}`;
+					result = true;
+					projectFile = file;
+					return `${workingDir}\\${file}`;
+				}
 			}
-		}
-		    if (require('fs').existsSync(projectFile)) {
+			if (require('fs').existsSync(projectFile)) {
 				return projectFile;
 			}
 
 			locationFolder = locationFolder.substring(0, locationFolder.lastIndexOf('\\'));
 		}
+	}
+
+	public addFileToProject(filePath: string) {
+		let projFilePath = this.getProjectConfigurationPath(filePath);
+
+
+		require('fs').readFile(projFilePath, 'utf8', function (err: string, content: string) {
+			if (err) {
+				vscode.window.showErrorMessage(err);
+			}
+			let lines: string[] = [];
+
+			if (!projFilePath) {
+				return;
+			}
+			let isAdded = false;
+			for (let line of content.split('\n')) {
+				if (line.indexOf('<Build Include=') >= 0 && !isAdded) {
+					let t = projFilePath.split('\\');
+					let repl = t.slice(0, t.length - 1).join('\\') + '\\';
+					let fileEntry = `    <Build Include="${filePath.replace(repl, '')}" />`;
+					if (fileEntry.trim() === line.trim()) {
+						vscode.window.showWarningMessage(`${filePath} already exists.`);
+						return;
+					}
+					if (fileEntry.trim() < line.trim()) {
+						lines.push(fileEntry);
+						isAdded = true;
+					}
+				}
+				lines.push(line);
+			}
+			if (isAdded) {
+				require('fs').writeFile(projFilePath, lines.join('\n'), function (err: string) {
+					if (err) {
+						vscode.window.showErrorMessage('Project file can\'t be modified');
+						console.log(err);
+						return;
+					}
+					vscode.window.showInformationMessage(`${filePath} is added to project.`);
+				});
+			}
+		});
+	}
+
+	public deleteFileFromProject(filePath: string) {
+		let projFilePath = this.getProjectConfigurationPath(filePath);
+
+		var parser = require('xml2js');
+
+		require('fs').readFile(projFilePath, 'utf8', function (err: string, content: string) {
+			if (err) {
+				vscode.window.showErrorMessage(err);
+			}
+
+			let lines: string[] = [];
+
+			if (!projFilePath) {
+				return;
+			}
+			let isDeleted = false;
+
+			for (let line of content.split('\n')) {
+				if (line.indexOf('<Build Include=') >= 0 && !isDeleted) {
+					let t = projFilePath.split('\\');
+					let repl = t.slice(0, t.length - 1).join('\\') + '\\';
+					let fileEntry = `    <Build Include="${filePath.replace(repl, '')}" />`;
+					if (fileEntry.trim() === line.trim()) {
+						isDeleted = true;
+						continue;
+					}
+				}
+				lines.push(line);
+			}
+
+			if (isDeleted) {
+				require('fs').writeFile(projFilePath, lines.join('\n'), function (err: string) {
+					if (err) {
+						vscode.window.showErrorMessage('Project file can\'t be modified');
+						console.log(err);
+						return;
+					}
+					vscode.window.showInformationMessage(`${filePath} is added to project.`);
+				});
+			} else {
+				vscode.window.showWarningMessage(`${filePath} is not found in the project.`);
+			}
+		});
 	}
 
 }

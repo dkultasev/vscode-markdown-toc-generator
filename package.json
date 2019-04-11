@@ -15,7 +15,6 @@
 		"onCommand:extension.gitInitialCommitMessageClipboard",
 		"onCommand:extension.ssdtAddToProject",
 		"onCommand:extension.ssdtdDelFromProject",
-		"onCommand:extension.ssdtBuildProject",
 		"onCommand:extension.sqlGenerateYAMLComment",
 		"onCommand:extension.sqlGenerateExtendedPropertyComment"
 	],
@@ -68,10 +67,6 @@
 				"title": "SSDT: Delete file from project"
 			},
 			{
-				"command": "extension.ssdtBuildProject",
-				"title": "SSDT: Build Project"
-			},
-			{
 				"command": "extension.sqlGenerateYAMLComment",
 				"title": "YAML: Generate comment header"
 			},
@@ -99,11 +94,6 @@
 			{
 				"command": "extension.ssdtdDelFromProject",
 				"key": "ctrl+k,ctrl+shift+d",
-				"when": "editorTextFocus"
-			},
-			{
-				"command": "extension.ssdtBuildProject",
-				"key": "ctrl+k,ctrl+shift+b",
 				"when": "editorTextFocus"
 			},
 			{
