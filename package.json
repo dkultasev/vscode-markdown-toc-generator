@@ -43,7 +43,7 @@
 				},
 				"markdown-table-of-contents.bitbucketRepositories": {
 					"type": "array",
-					"items":  {
+					"items": {
 						"type": "object",
 						"title": "inner objects",
 						"properties": {
@@ -167,6 +167,7 @@
 		"fs": "0.0.1-security",
 		"iconv-lite": "^0.4.24",
 		"path": "^0.12.7",
+		"util": "^0.11.1",
 		"xml2js": "^0.4.19",
 		"xmldom": "^0.1.27"
 	}
