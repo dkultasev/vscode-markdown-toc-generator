@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { exec } from 'child_process';
-import { dirname }  from 'path';
+import { dirname } from 'path';
 
 
 export function activate(context: vscode.ExtensionContext) {
@@ -43,22 +43,22 @@ export function activate(context: vscode.ExtensionContext) {
 
 	disposable = vscode.commands.registerCommand('extension.bitBucketOpenPullRequestInBrowser', () => {
 
-			let editor = vscode.window.activeTextEditor;
-			if (!editor) {
-				vscode.window.showErrorMessage('Run this command on the open editor.');
+		let editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			vscode.window.showErrorMessage('Run this command on the open editor.');
 
 			return;
-			}
+		}
 
-			let config: any = vscode.workspace.getConfiguration('markdown-table-of-contents').get('bitbucketRepositories');
-			
-			for (let setting of config) {
-				if (editor.document.fileName.toLowerCase().startsWith(setting.folder.toLowerCase())) {
-					let b = new Bitubcket(setting.repository, setting.project,setting.folder);
-					b.openPullRequestUrlInDefaultBrowser(editor.document.fileName);
-				}
+		let config: any = vscode.workspace.getConfiguration('markdown-table-of-contents').get('bitbucketRepositories');
+
+		for (let setting of config) {
+			if (editor.document.fileName.toLowerCase().startsWith(setting.folder.toLowerCase())) {
+				let b = new Bitubcket(setting.repository, setting.project, setting.folder);
+				b.openPullRequestUrlInDefaultBrowser(editor.document.fileName);
 			}
-			// let b: Bitubcket = new Bitubcket(confi);
+		}
+		// let b: Bitubcket = new Bitubcket(confi);
 
 	});
 
@@ -158,30 +158,16 @@ GO`;
 	context.subscriptions.push(disposable);
 
 	disposable = vscode.commands.registerCommand('extension.gitInitialCommitMessageClipboard', () => {
-		const clipboardy = require('clipboardy');
-		const { exec } = require('child_process');
-		const path = require('path');
+
 		let editor = vscode.window.activeTextEditor;
 		if (!editor) {
 			return;
 		}
 
-		exec('git rev-parse --abbrev-ref HEAD', {
-			cwd: path.dirname(editor.document.fileName)
-		}, (err: (Error & { code?: string | number }) | null, branch: string, stderr: string) => {
+		let git = new GIT();
 
-			if (err) {
-				console.log(err);
-				return;
-			}
-			// let initialCommitMessage = '\n\n' + branch.split('/')[1];
-			let regex = new RegExp('(.*-[0-9]{1,4})').exec(branch.split('/')[1]);
-			if (!regex) {
-				return;
-			}
+		git.getFeatureIdFromBranch(editor.document.fileName);
 
-			clipboardy.writeSync(regex[0]);
-		});
 
 	});
 
@@ -294,15 +280,15 @@ class Bitubcket {
 		exec('git rev-parse --abbrev-ref HEAD', {
 			cwd: dirname(fileName)
 		}, (err: (Error & { code?: string | number }) | null, branch: string, stderr: string) => {
-			
+
 			let config: any = vscode.workspace.getConfiguration('markdown-table-of-contents').get('bitbucketRepositories');
 
-			if (!config ) {
+			if (!config) {
 				vscode.window.showErrorMessage('Please set bitbucket configuration in workspace settings');
 				return;
 			}
 
-			
+
 			for (let setting of config) {
 				if (fileName.toLowerCase().startsWith(setting.folder.toLowerCase())) {
 					let url = `http://bitbucket.timepayment.com:7990/projects/${setting.project}/repos/${setting.repository}/compare/commits?sourceBranch=refs/heads/${branch}`;
@@ -427,6 +413,33 @@ class SSDT {
 			} else {
 				vscode.window.showWarningMessage(`${filePath} is not found in the project.`);
 			}
+		});
+	}
+}
+
+class GIT {
+
+	public getFeatureIdFromBranch(filePath: string) {
+		const { exec } = require('child_process');
+		const path = require('path');
+		const clipboardy = require('clipboardy');
+
+		exec('git rev-parse --abbrev-ref HEAD', {
+			cwd: path.dirname(filePath)
+		}, (err: (Error & { code?: string | number }) | null, branch: string, stderr: string) => {
+
+			if (err) {
+				console.log(err);
+				return;
+			}
+			// let initialCommitMessage = '\n\n' + branch.split('/')[1];
+			let regex = new RegExp('([a-zA-Z].*)\\/([a-zA-Z]+-[0-9]{1,5}).*').exec(branch);
+
+			if (!regex) {
+				return;
+			}
+			clipboardy.writeSync(regex[2]);
+
 		});
 	}
 }
