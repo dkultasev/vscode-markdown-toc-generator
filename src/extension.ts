@@ -165,9 +165,11 @@ GO`;
 		}
 
 		let git = new GIT();
+		const clipboardy = require('clipboardy');
 
-		git.getFeatureIdFromBranch(editor.document.fileName);
-
+		git.getFeatureIdFromBranch(editor.document.fileName, (result: string) => {
+			clipboardy.write(result);
+		});
 
 	});
 
@@ -296,7 +298,6 @@ class Bitubcket {
 				}
 			}
 		});
-
 	}
 }
 
@@ -419,10 +420,10 @@ class SSDT {
 
 class GIT {
 
-	public getFeatureIdFromBranch(filePath: string) {
+	async getFeatureIdFromBranch(filePath: string, cb: any) {
 		const { exec } = require('child_process');
 		const path = require('path');
-		const clipboardy = require('clipboardy');
+		
 
 		exec('git rev-parse --abbrev-ref HEAD', {
 			cwd: path.dirname(filePath)
@@ -432,14 +433,13 @@ class GIT {
 				console.log(err);
 				return;
 			}
-			// let initialCommitMessage = '\n\n' + branch.split('/')[1];
 			let regex = new RegExp('([a-zA-Z].*)\\/([a-zA-Z]+-[0-9]{1,5}).*').exec(branch);
 
 			if (!regex) {
 				return;
 			}
-			clipboardy.writeSync(regex[2]);
 
+			cb(regex[2]);
 		});
 	}
 }
