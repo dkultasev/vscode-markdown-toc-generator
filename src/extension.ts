@@ -167,7 +167,25 @@ GO`;
 		let git = new GIT();
 		const clipboardy = require('clipboardy');
 
-		git.getFeatureIdFromBranch(editor.document.fileName, (result: string) => {
+		git.getFeatureIdFromFileName(editor.document.fileName, (result: string) => {
+			clipboardy.write(result);
+		});
+
+	});
+
+	context.subscriptions.push(disposable);
+
+	disposable = vscode.commands.registerCommand('extension.gitCopyFeatureBranchToClipboard', () => {
+
+		let editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			return;
+		}
+
+		let git = new GIT();
+		const clipboardy = require('clipboardy');
+
+		git.getGitBranchFromFileName(editor.document.fileName, (result: string) => {
 			clipboardy.write(result);
 		});
 
@@ -420,10 +438,21 @@ class SSDT {
 
 class GIT {
 
-	async getFeatureIdFromBranch(filePath: string, cb: any) {
+	async getFeatureIdFromFileName(filePath: string, cb: any) {
+		this.getGitBranchFromFileName(filePath, (branch: string) => {
+			let regex = new RegExp('([a-zA-Z].*)\\/([a-zA-Z]+-[0-9]{1,5}).*').exec(branch);
+
+			if (!regex) {
+				return;
+			}
+
+			cb(regex[2]);
+		} );
+	}
+
+	async getGitBranchFromFileName(filePath: string, cb: any) {
 		const { exec } = require('child_process');
 		const path = require('path');
-		
 
 		exec('git rev-parse --abbrev-ref HEAD', {
 			cwd: path.dirname(filePath)
@@ -433,13 +462,8 @@ class GIT {
 				console.log(err);
 				return;
 			}
-			let regex = new RegExp('([a-zA-Z].*)\\/([a-zA-Z]+-[0-9]{1,5}).*').exec(branch);
 
-			if (!regex) {
-				return;
-			}
-
-			cb(regex[2]);
+			cb(branch.replace('\n',''));
 		});
 	}
 }

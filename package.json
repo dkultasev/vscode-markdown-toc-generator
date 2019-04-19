@@ -13,6 +13,7 @@
 	"activationEvents": [
 		"onCommand:extension.mdReadmeTableOfContents",
 		"onCommand:extension.gitInitialCommitMessageClipboard",
+		"onCommand:extension.gitCopyFeatureBranchToClipboard",
 		"onCommand:extension.ssdtAddToProject",
 		"onCommand:extension.ssdtdDelFromProject",
 		"onCommand:extension.bitBucketOpenPullRequestInBrowser",
@@ -76,6 +77,10 @@
 				"title": "Git: Copy Jira issue to clipboard"
 			},
 			{
+				"command": "extension.gitCopyFeatureBranchToClipboard",
+				"title": "Git: Copy git feature branch to clipboard"
+			},
+			{
 				"command": "extension.ssdtAddToProject",
 				"title": "SSDT: Add file to project"
 			},
@@ -109,6 +114,11 @@
 			{
 				"command": "extension.gitInitialCommitMessageClipboard",
 				"key": "ctrl+k,ctrl+shift+j",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "extension.gitCopyFeatureBranchToClipboard",
+				"key": "ctrl+k,ctrl+shift+b",
 				"when": "editorTextFocus"
 			},
 			{
