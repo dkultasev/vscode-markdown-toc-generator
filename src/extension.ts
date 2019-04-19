@@ -251,8 +251,7 @@ GO`;
 					gitDate = '0' + gitDate;
 				}
 				let yaml =
-					`
-/*
+`/*
 ---
 created_by: ${name}
 created_date: ${gitDate}
@@ -261,8 +260,7 @@ description: >
 jira_issues:
   - ${regex[0]}
 ...
-*/
-`;
+*/`;
 				const position = e.selection.active;
 				let newPosition = position.with(position.line, 0);
 
