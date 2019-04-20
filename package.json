@@ -17,6 +17,7 @@
 		"onCommand:extension.ssdtAddToProject",
 		"onCommand:extension.ssdtdDelFromProject",
 		"onCommand:extension.bitBucketOpenPullRequestInBrowser",
+		"onCommand:extension.bambooOpenFeatureBuild",
 		"onCommand:extension.sqlGenerateYAMLComment",
 		"onCommand:extension.sqlGenerateExtendedPropertyComment"
 	],
@@ -41,6 +42,14 @@
 					],
 					"default": null,
 					"description": "Temp setting used for tasks"
+				},
+				"markdown-table-of-contents.atlassianAuthHash": {
+					"type": [
+						"string",
+						"null"
+					],
+					"default": null,
+					"description": "Atlassian user/pass hash used to authenticate in atlassian services"
 				},
 				"markdown-table-of-contents.bitbucketRepositories": {
 					"type": "array",
@@ -93,6 +102,10 @@
 				"title": "Bitbucket: Open pull request in browser"
 			},
 			{
+				"command": "extension.bambooOpenFeatureBuild",
+				"title": "Bamboo: Open plan branch build in browser"
+			},
+			{
 				"command": "extension.ssdtBuildProject",
 				"title": "SSDT: Build Project"
 			},
@@ -134,6 +147,11 @@
 			{
 				"command": "extension.bitBucketOpenPullRequestInBrowser",
 				"key": "ctrl+k,ctrl+shift+p",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "extension.bambooOpenFeatureBuild",
+				"key": "ctrl+k,ctrl+shift+q",
 				"when": "editorTextFocus"
 			},
 			{

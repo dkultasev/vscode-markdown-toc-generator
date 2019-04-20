@@ -30,9 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
 				return;
 			}
 
-			let fileName = editor.document.fileName;
-			let s: SSDT = new SSDT();
-			let projFilePath = s.deleteFileFromProject(fileName);
+			new SSDT().deleteFileFromProject(editor.document.fileName);
 
 		} catch (e) {
 			vscode.window.showErrorMessage(e);
@@ -46,7 +44,6 @@ export function activate(context: vscode.ExtensionContext) {
 		let editor = vscode.window.activeTextEditor;
 		if (!editor) {
 			vscode.window.showErrorMessage('Run this command on the open editor.');
-
 			return;
 		}
 
@@ -58,8 +55,19 @@ export function activate(context: vscode.ExtensionContext) {
 				b.openPullRequestUrlInDefaultBrowser(editor.document.fileName);
 			}
 		}
-		// let b: Bitubcket = new Bitubcket(confi);
+	});
 
+	context.subscriptions.push(disposable);
+
+	disposable = vscode.commands.registerCommand('extension.bambooOpenFeatureBuild', () => {
+		let editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			vscode.window.showErrorMessage('Run this command on the open editor.');
+
+			return;
+		}
+
+		new Atlassian().openBambooPlanUrlInBrowser(editor.document.fileName);
 	});
 
 	context.subscriptions.push(disposable);
@@ -251,7 +259,7 @@ GO`;
 					gitDate = '0' + gitDate;
 				}
 				let yaml =
-`/*
+					`/*
 ---
 created_by: ${name}
 created_date: ${gitDate}
@@ -445,7 +453,7 @@ class GIT {
 			}
 
 			cb(regex[2]);
-		} );
+		});
 	}
 
 	async getGitBranchFromFileName(filePath: string, cb: any) {
@@ -461,7 +469,36 @@ class GIT {
 				return;
 			}
 
-			cb(branch.replace('\n',''));
+			cb(branch.replace('\n', ''));
 		});
+	}
+}
+
+class Atlassian {
+	async openBambooPlanUrlInBrowser(fileName: string) {
+		new GIT().getGitBranchFromFileName(fileName, (branch: string) => {
+			var config: any = vscode.workspace.getConfiguration('markdown-table-of-contents').get('bitbucketRepositories');
+			for (var setting of config) {
+
+				if (fileName.toLowerCase().startsWith(setting.folder.toLowerCase())) {
+					branch = branch.replace('/', '-');
+					let bambooHost = vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianBambooHost');
+					require('request')(
+						{
+							url: `${bambooHost}/rest/api/latest/plan/${setting.bambooPlanKey}/branch/${branch}.json`,
+							headers: {
+								"Authorization": 'Basic ' + vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianAuthHash')
+							}
+						},
+						(error: string, response: string, body: string) => {
+							let planKey = JSON.parse(body).key;
+							vscode.env.openExternal(vscode.Uri.parse(`${bambooHost}/browse/${planKey}`));
+						}
+					);
+
+				}
+			}
+		});
+
 	}
 }
