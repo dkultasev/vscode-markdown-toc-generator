@@ -18,6 +18,7 @@
 		"onCommand:extension.ssdtdDelFromProject",
 		"onCommand:extension.bitBucketOpenPullRequestInBrowser",
 		"onCommand:extension.bambooOpenFeatureBuild",
+		"onCommand:extension.bambooQueueBuild",
 		"onCommand:extension.sqlGenerateYAMLComment",
 		"onCommand:extension.sqlGenerateExtendedPropertyComment"
 	],
@@ -106,6 +107,10 @@
 				"title": "Bamboo: Open plan branch build in browser"
 			},
 			{
+				"command": "extension.bambooQueueBuild",
+				"title": "Bamboo: Queue branch build"
+			},
+			{
 				"command": "extension.ssdtBuildProject",
 				"title": "SSDT: Build Project"
 			},
@@ -155,6 +160,11 @@
 				"when": "editorTextFocus"
 			},
 			{
+				"command": "extension.bambooQueueBuild",
+				"key": "ctrl+k,ctrl+shift+w",
+				"when": "editorTextFocus"
+			},
+			{
 				"command": "extension.ssdtBuildProject",
 				"key": "ctrl+k,ctrl+shift+b",
 				"when": "editorTextFocus"
@@ -195,6 +205,7 @@
 		"fs": "0.0.1-security",
 		"iconv-lite": "^0.4.24",
 		"path": "^0.12.7",
+		"request": "^2.88.0",
 		"util": "^0.11.1",
 		"xml2js": "^0.4.19",
 		"xmldom": "^0.1.27"

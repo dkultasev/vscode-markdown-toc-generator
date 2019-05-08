@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { exec } from 'child_process';
 import { dirname } from 'path';
 
-
 export function activate(context: vscode.ExtensionContext) {
 
 	let disposable = vscode.commands.registerCommand('extension.ssdtAddToProject', () => {
@@ -68,6 +67,19 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		new Atlassian().openBambooPlanUrlInBrowser(editor.document.fileName);
+	});
+
+	context.subscriptions.push(disposable);
+
+	disposable = vscode.commands.registerCommand('extension.bambooQueueBuild', () => {
+		let editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			vscode.window.showErrorMessage('Run this command on the open editor.');
+
+			return;
+		}
+
+		new Atlassian().queueBambooPlan(editor.document.fileName);
 	});
 
 	context.subscriptions.push(disposable);
@@ -208,10 +220,9 @@ GO`;
 		}
 		const clipboardy = require('clipboardy');
 		const { exec } = require('child_process');
-		const path = require('path');
 
 		exec('git rev-parse --abbrev-ref HEAD', {
-			cwd: path.dirname(editor.document.fileName)
+			cwd: dirname(editor.document.fileName)
 		}, (err: (Error & { code?: string | number }) | null, branch: string, stderr: string) => {
 
 			let e = vscode.window.activeTextEditor;
@@ -227,7 +238,7 @@ GO`;
 
 
 			exec('git log --diff-filter=A --follow --format=%aD -1 -- ' + e.document.fileName, {
-				cwd: path.dirname(e.document.fileName)
+				cwd: dirname(e.document.fileName)
 			}, (err: (Error & { code?: string | number }) | null, firstDate: string, stderr: string) => {
 				if (err) {
 					console.log(err);
@@ -329,14 +340,13 @@ class SSDT {
 	sqlPackagePath: string = '';
 
 	private getProjectConfigurationPath(locationFolder: string) {
-		const path = require('path');
 		const fs = require('fs');
 		let result = false;
 		while (locationFolder.indexOf('\\') >= 0) {
 			let tmp = locationFolder.split('\\');
 			let projectFile = '';
 
-			let workingDir = path.dirname(locationFolder);
+			let workingDir = dirname(locationFolder);
 			let dirs = fs.readdirSync(workingDir);
 			for (let file of dirs) {
 				if (file.indexOf('.sqlproj') >= 0) {
@@ -458,10 +468,9 @@ class GIT {
 
 	async getGitBranchFromFileName(filePath: string, cb: any) {
 		const { exec } = require('child_process');
-		const path = require('path');
 
 		exec('git rev-parse --abbrev-ref HEAD', {
-			cwd: path.dirname(filePath)
+			cwd: dirname(filePath)
 		}, (err: (Error & { code?: string | number }) | null, branch: string, stderr: string) => {
 
 			if (err) {
@@ -483,7 +492,9 @@ class Atlassian {
 				if (fileName.toLowerCase().startsWith(setting.folder.toLowerCase())) {
 					branch = branch.replace('/', '-');
 					let bambooHost = vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianBambooHost');
-					require('request')(
+					const request = require('request');
+
+					request(
 						{
 							url: `${bambooHost}/rest/api/latest/plan/${setting.bambooPlanKey}/branch/${branch}.json`,
 							headers: {
@@ -495,6 +506,58 @@ class Atlassian {
 							vscode.env.openExternal(vscode.Uri.parse(`${bambooHost}/browse/${planKey}`));
 						}
 					);
+
+				}
+			}
+		});
+
+	}
+	async queueBambooPlan(fileName: string) {
+		new GIT().getGitBranchFromFileName(fileName, (branch: string) => {
+			var config: any = vscode.workspace.getConfiguration('markdown-table-of-contents').get('bitbucketRepositories');
+			for (var setting of config) {
+
+				if (fileName.toLowerCase().startsWith(setting.folder.toLowerCase())) {
+					branch = branch.replace('/', '-');
+					let bambooHost = vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianBambooHost');
+					const request = require('request');
+					request(
+						{
+							url: `${bambooHost}/rest/api/latest/plan/${setting.bambooPlanKey}/branch/${branch}.json`,
+							headers: {
+								"Authorization": 'Basic ' + vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianAuthHash')
+							}
+						},
+						(error: string, response: string, body: string) => {
+
+							var planKey = JSON.parse(body).key;
+							request(
+								{
+									url: `${bambooHost}/rest/api/latest/queue/${planKey}`,
+									headers: {
+										"Authorization": 'Basic ' + vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianAuthHash')
+									},
+									method: "post"
+								},
+								(error: string, response: any, body: string) => {
+									if (String(response.body).indexOf('maximum number') >= 0) {
+										vscode.window.showWarningMessage('Build is already running');
+									}
+									else if (String(response.body).indexOf('restQueuedBuild planKey') >= 0) {
+										vscode.window.showInformationMessage('Build is queued');
+									}
+									else if (String(response.body).indexOf('<status-code>404</status-code>') >= 0) {
+										vscode.window.showErrorMessage('Build is not found');
+									}
+									else {
+										vscode.window.showErrorMessage(String(response.body));
+									}
+								}
+							);							
+						}
+					);
+					
+
 
 				}
 			}
