@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import { exec } from 'child_process';
 import { dirname } from 'path';
+import * as request from "request-promise-native";
+
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -164,7 +166,7 @@ EXEC sys.sp_addextendedproperty @name = 'MS_Description'
                               , @level1type = '${objectType.toUpperCase()}'
                               , @level1name = '${objectName}'
                               , @level2type = NULL
-                              , @level2name = NULL;	
+                              , @level2name = NULL;
 GO`;
 		const position = editor.selection.active;
 		let newPosition = position.with(position.line, 0);
@@ -186,10 +188,15 @@ GO`;
 
 		let git = new GIT();
 		const clipboardy = require('clipboardy');
-
-		git.getFeatureIdFromFileName(editor.document.fileName, (result: string) => {
-			clipboardy.write(result);
-		});
+		(async () => {
+			try {
+				var text = await git.getFeatureIdFromFileName(editor.document.fileName);
+				clipboardy.write(text);
+			} catch (err) {
+				console.log(err);
+				vscode.window.showErrorMessage('Error please check the log');
+			}
+		})();
 
 	});
 
@@ -204,11 +211,15 @@ GO`;
 
 		let git = new GIT();
 		const clipboardy = require('clipboardy');
-
-		git.getGitBranchFromFileName(editor.document.fileName, (result: string) => {
-			clipboardy.write(result);
-		});
-
+		(async () => {
+			try {
+				var text = await git.getGitBranchFromFileName(editor.document.fileName);
+				clipboardy.write(text);
+			} catch (err) {
+				console.log(err);
+				vscode.window.showErrorMessage('Error please check the log');
+			}
+		})();
 	});
 
 	context.subscriptions.push(disposable);
@@ -219,44 +230,23 @@ GO`;
 			return;
 		}
 		const clipboardy = require('clipboardy');
-		const { exec } = require('child_process');
+		// const { exec } = require('child_process');
+		let git = new GIT();
 
-		exec('git rev-parse --abbrev-ref HEAD', {
-			cwd: dirname(editor.document.fileName)
-		}, (err: (Error & { code?: string | number }) | null, branch: string, stderr: string) => {
-
-			let e = vscode.window.activeTextEditor;
-			if (!e) {
-				return;
-			}
-
-			if (err) {
-				console.log(err);
-				return;
-			}
-			let initialCommitMessage = '\n\n' + branch.split('/')[1];
-
-
-			exec('git log --diff-filter=A --follow --format=%aD -1 -- ' + e.document.fileName, {
-				cwd: dirname(e.document.fileName)
-			}, (err: (Error & { code?: string | number }) | null, firstDate: string, stderr: string) => {
-				if (err) {
-					console.log(err);
-					return;
-				}
+		(async () => {
+			try {
 				let e = vscode.window.activeTextEditor;
-
-				// vscode.workspace.getConfiguration('markdown-table-of-contents').update('author_name', 'Dmitrij Kultasev')
-				const name = vscode.workspace.getConfiguration('markdown-table-of-contents').get('userFullName');
-
-
 				if (!e) {
 					return;
 				}
 
+				let branch = await git.getGitBranchFromFileName(editor.document.fileName);
+				let firstDate = await git.execGitCmd('git log --diff-filter=A --follow --format=%aD -1 -- ' + e.document.fileName, editor.document.fileName);
+				const name = vscode.workspace.getConfiguration('markdown-table-of-contents').get('userFullName');
+
 				let gitDate = '';
-				if (firstDate.length > 1) {
-					let gitDateArr = firstDate.split(' ');
+				if (String(firstDate).split('\n').length >= 1) {
+					let gitDateArr = String(firstDate).split(' ');
 					gitDate = `${gitDateArr[1]}-${gitDateArr[2]}-${gitDateArr[3]}`;
 				} else {
 					let parts = new Date(Date.now()).toDateString().split(' ');
@@ -287,10 +277,11 @@ jira_issues:
 
 					textEdit.insert(newPosition, yaml);
 				});
-			});
-
-
-		});
+			} catch (err) {
+				console.log(err);
+				vscode.window.showErrorMessage('Error please check the log');
+			}
+		})();
 
 
 	});
@@ -300,6 +291,8 @@ jira_issues:
 }
 
 export function deactivate() { }
+
+
 
 
 class Bitubcket {
@@ -314,25 +307,27 @@ class Bitubcket {
 	}
 
 	public openPullRequestUrlInDefaultBrowser(fileName: string) {
-		exec('git rev-parse --abbrev-ref HEAD', {
-			cwd: dirname(fileName)
-		}, (err: (Error & { code?: string | number }) | null, branch: string, stderr: string) => {
-
-			let config: any = vscode.workspace.getConfiguration('markdown-table-of-contents').get('bitbucketRepositories');
-
-			if (!config) {
-				vscode.window.showErrorMessage('Please set bitbucket configuration in workspace settings');
-				return;
-			}
-
-
-			for (let setting of config) {
-				if (fileName.toLowerCase().startsWith(setting.folder.toLowerCase())) {
-					let url = `http://bitbucket.timepayment.com:7990/projects/${setting.project}/repos/${setting.repository}/compare/commits?sourceBranch=refs/heads/${branch}`;
-					vscode.env.openExternal(vscode.Uri.parse(url));
+		(async () => {
+			try {
+				let branch = await new GIT().getGitBranchFromFileName(fileName);
+				let config: any = vscode.workspace.getConfiguration('markdown-table-of-contents').get('bitbucketRepositories');
+				if (!config) {
+					vscode.window.showErrorMessage('Please set bitbucket configuration in workspace settings');
+					return;
 				}
+
+
+				for (let setting of config) {
+					if (fileName.toLowerCase().startsWith(setting.folder.toLowerCase())) {
+						let url = `http://bitbucket.timepayment.com:7990/projects/${setting.project}/repos/${setting.repository}/compare/commits?sourceBranch=refs/heads/${branch}`;
+						vscode.env.openExternal(vscode.Uri.parse(url));
+					}
+				}
+			} catch (err) {
+				console.log(err);
+				vscode.window.showErrorMessage('Error please check the log');
 			}
-		});
+		})();
 	}
 }
 
@@ -343,7 +338,6 @@ class SSDT {
 		const fs = require('fs');
 		let result = false;
 		while (locationFolder.indexOf('\\') >= 0) {
-			let tmp = locationFolder.split('\\');
 			let projectFile = '';
 
 			let workingDir = dirname(locationFolder);
@@ -394,14 +388,17 @@ class SSDT {
 				lines.push(line);
 			}
 			if (isAdded) {
-				require('fs').writeFile(projFilePath, lines.join('\n'), function (err: string) {
-					if (err) {
-						vscode.window.showErrorMessage('Project file can\'t be modified');
+				(async () => {
+					try {
+						const util = require('util');
+						const fs_writeFile = util.promisify(require('fs').writeFile);
+						await fs_writeFile(projFilePath, lines.join('\n'));
+						vscode.window.showInformationMessage(`${filePath} is added to project.`);
+					} catch (err) {
 						console.log(err);
-						return;
+						vscode.window.showErrorMessage('Error please check the log');
 					}
-					vscode.window.showInformationMessage(`${filePath} is added to project.`);
-				});
+				})();
 			}
 		});
 	}
@@ -409,159 +406,187 @@ class SSDT {
 	public deleteFileFromProject(filePath: string) {
 		let projFilePath = this.getProjectConfigurationPath(filePath);
 
-		var parser = require('xml2js');
+		(async () => {
+			try {
+				const util = require('util');
+				const fs_readFile = util.promisify(require('fs').readFile);
+				let content = await fs_readFile(projFilePath, 'utf8');
 
-		require('fs').readFile(projFilePath, 'utf8', function (err: string, content: string) {
-			if (err) {
-				vscode.window.showErrorMessage(err);
-			}
+				let lines: string[] = [];
 
-			let lines: string[] = [];
-
-			if (!projFilePath) {
-				return;
-			}
-			let isDeleted = false;
-
-			for (let line of content.split('\n')) {
-				if (line.indexOf('<Build Include=') >= 0 && !isDeleted) {
-					let t = projFilePath.split('\\');
-					let repl = t.slice(0, t.length - 1).join('\\') + '\\';
-					let fileEntry = `    <Build Include="${filePath.replace(repl, '')}" />`;
-					if (fileEntry.trim() === line.trim()) {
-						isDeleted = true;
-						continue;
-					}
+				if (!projFilePath) {
+					return;
 				}
-				lines.push(line);
-			}
+				let isDeleted = false;
 
-			if (isDeleted) {
-				require('fs').writeFile(projFilePath, lines.join('\n'), function (err: string) {
-					if (err) {
-						vscode.window.showErrorMessage('Project file can\'t be modified');
-						console.log(err);
-						return;
+				for (let line of content.split('\n')) {
+					if (line.indexOf('<Build Include=') >= 0 && !isDeleted) {
+						let t = projFilePath.split('\\');
+						let repl = t.slice(0, t.length - 1).join('\\') + '\\';
+						let fileEntry = `    <Build Include="${filePath.replace(repl, '')}" />`;
+						if (fileEntry.trim() === line.trim()) {
+							isDeleted = true;
+							continue;
+						}
 					}
-					vscode.window.showInformationMessage(`${filePath} is added to project.`);
-				});
-			} else {
-				vscode.window.showWarningMessage(`${filePath} is not found in the project.`);
+					lines.push(line);
+				}
+				if (isDeleted) {
+					const util = require('util');
+					const fs_writeFile = util.promisify(require('fs').writeFile);
+					await fs_writeFile(projFilePath, lines.join('\n'));
+					vscode.window.showInformationMessage(`${filePath} is deleted from project.`);
+				} else {
+					vscode.window.showWarningMessage(`${filePath} is not found in the project.`);
+				}
+
+			} catch (err) {
+				console.log(err);
+				vscode.window.showErrorMessage('Error please check the log');
 			}
-		});
+		})();
 	}
 }
 
 class GIT {
 
-	async getFeatureIdFromFileName(filePath: string, cb: any) {
-		this.getGitBranchFromFileName(filePath, (branch: string) => {
-			let regex = new RegExp('([a-zA-Z].*)\\/([a-zA-Z]+-[0-9]{1,5}).*').exec(branch);
+	async getFeatureIdFromFileName(filePath: string): Promise<string> {
+		let branch = await this.getGitBranchFromFileName(filePath);
+		let regex = new RegExp('([a-zA-Z].*)\\/([a-zA-Z]+-[0-9]{1,5}).*');
+		let regexMatch = regex.exec(branch);
 
-			if (!regex) {
-				return;
-			}
+		if (regexMatch === null) {
+			return '';
+		}
 
-			cb(regex[2]);
+		return regexMatch[2];
+
+	}
+
+	async execGitCmd(cmd: string, path: string) {
+		return await new Promise((resolve, reject) => {
+			exec(cmd, {
+				cwd: dirname(path)
+			}, (err: (Error & { code?: string | number }) | null, result: string, stderr: string) => {
+				if (err !== null) {
+					vscode.window.showErrorMessage('Error check the log');
+					console.log(err);
+					return reject();
+				}
+				resolve(result);
+			});
 		});
 	}
 
-	async getGitBranchFromFileName(filePath: string, cb: any) {
-		const { exec } = require('child_process');
-
-		exec('git rev-parse --abbrev-ref HEAD', {
-			cwd: dirname(filePath)
-		}, (err: (Error & { code?: string | number }) | null, branch: string, stderr: string) => {
-
-			if (err) {
-				console.log(err);
-				return;
-			}
-
-			cb(branch.replace('\n', ''));
-		});
+	async getGitBranchFromFileName(filePath: string): Promise<string> {
+		let branch = await this.execGitCmd('git rev-parse --abbrev-ref HEAD', filePath);
+		String(branch).replace('\n', '');
+		return String(branch).replace('\n', '');
 	}
 }
 
 class Atlassian {
-	async openBambooPlanUrlInBrowser(fileName: string) {
-		new GIT().getGitBranchFromFileName(fileName, (branch: string) => {
-			var config: any = vscode.workspace.getConfiguration('markdown-table-of-contents').get('bitbucketRepositories');
-			for (var setting of config) {
 
-				if (fileName.toLowerCase().startsWith(setting.folder.toLowerCase())) {
-					branch = branch.replace('/', '-');
-					let bambooHost = vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianBambooHost');
-					const request = require('request');
-
-					request(
-						{
-							url: `${bambooHost}/rest/api/latest/plan/${setting.bambooPlanKey}/branch/${branch}.json`,
-							headers: {
-								"Authorization": 'Basic ' + vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianAuthHash')
-							}
-						},
-						(error: string, response: string, body: string) => {
-							let planKey = JSON.parse(body).key;
-							vscode.env.openExternal(vscode.Uri.parse(`${bambooHost}/browse/${planKey}`));
-						}
-					);
-
-				}
+	private bambooRepositorySettings(config: any, fileName: string): any {
+		for (var setting of config) {
+			if (fileName.toLowerCase().startsWith(setting.folder.toLowerCase())) {
+				return setting;
 			}
-		});
+		}
+	}
+
+	async getRequest(uri: string): Promise<any> {
+		var options = {
+			uri: uri,
+			headers: {
+				"Authorization": 'Basic ' + vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianAuthHash')
+			},
+			json: true
+		};
+
+		try {
+			const result = await request.get(options);
+			return result;
+		}
+		catch (err) {
+			console.log(err);
+			throw (err);
+		}
+	}
+	async postRequest(uri: string): Promise<any> {
+		var options = {
+			uri: uri,
+			headers: {
+				"Authorization": 'Basic ' + vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianAuthHash')
+			},
+			method: 'POST',
+			json: true
+		};
+
+		try {
+			const result = await request(options);
+			return result;
+		}
+		catch (err) {
+			console.log(err);
+			throw (err);
+		}
+	}
+
+	async getBambooPlanKey(fileName: string, bambooHost: string | undefined): Promise<string> {
+		var branch = await new GIT().getGitBranchFromFileName(fileName);
+
+		var config: any = vscode.workspace.getConfiguration('markdown-table-of-contents').get('bitbucketRepositories');
+		var setting = this.bambooRepositorySettings(config, fileName);
+
+		branch = branch.replace('/', '-');
+
+		try {
+			let uri = `${bambooHost}/rest/api/latest/plan/${setting.bambooPlanKey}/branch/${branch}.json`;
+			let result = await this.getRequest(uri);
+			return result.key;
+		}
+		catch (err) {
+			vscode.window.showErrorMessage('Error please check the log');
+			console.log(err);
+			throw err;
+		}
+
+	}
+
+	async openBambooPlanUrlInBrowser(fileName: string) {
+
+		try {
+			let bambooHost: string | undefined = vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianBambooHost');
+			let planKey = await this.getBambooPlanKey(fileName, bambooHost);
+			vscode.env.openExternal(vscode.Uri.parse(`${bambooHost}/browse/${planKey}`));
+		}
+		catch (err) {
+			vscode.window.showErrorMessage('Error please check the log');
+			console.log(err);
+		}
+
 
 	}
 	async queueBambooPlan(fileName: string) {
-		new GIT().getGitBranchFromFileName(fileName, (branch: string) => {
-			var config: any = vscode.workspace.getConfiguration('markdown-table-of-contents').get('bitbucketRepositories');
-			for (var setting of config) {
-
-				if (fileName.toLowerCase().startsWith(setting.folder.toLowerCase())) {
-					branch = branch.replace('/', '-');
-					let bambooHost = vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianBambooHost');
-					const request = require('request');
-					request(
-						{
-							url: `${bambooHost}/rest/api/latest/plan/${setting.bambooPlanKey}/branch/${branch}.json`,
-							headers: {
-								"Authorization": 'Basic ' + vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianAuthHash')
-							}
-						},
-						(error: string, response: string, body: string) => {
-
-							var planKey = JSON.parse(body).key;
-							request(
-								{
-									url: `${bambooHost}/rest/api/latest/queue/${planKey}`,
-									headers: {
-										"Authorization": 'Basic ' + vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianAuthHash')
-									},
-									method: "post"
-								},
-								(error: string, response: any, body: string) => {
-									if (String(response.body).indexOf('maximum number') >= 0) {
-										vscode.window.showWarningMessage('Build is already running');
-									}
-									else if (String(response.body).indexOf('restQueuedBuild planKey') >= 0) {
-										vscode.window.showInformationMessage('Build is queued');
-									}
-									else if (String(response.body).indexOf('<status-code>404</status-code>') >= 0) {
-										vscode.window.showErrorMessage('Build is not found');
-									}
-									else {
-										vscode.window.showErrorMessage(String(response.body));
-									}
-								}
-							);							
-						}
-					);
-					
-
-
-				}
+		let bambooHost: string | undefined = vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianBambooHost');
+		let planKey = await this.getBambooPlanKey(fileName, bambooHost);
+		let uri = `${bambooHost}/rest/api/latest/queue/${planKey}`;
+		try {
+			let response = await this.postRequest(uri);
+			vscode.window.showInformationMessage('Build is queued');
+			return response;
+		}
+		catch (err) {
+			if (String(err).indexOf('maximum number') >= 0) {
+				vscode.window.showWarningMessage('Build is already running');
 			}
-		});
-
+			else if (String(err).indexOf('<status-code>404</status-code>') >= 0) {
+				vscode.window.showErrorMessage('Build is not found');
+			}
+			else {
+				vscode.window.showErrorMessage(String(err));
+			}
+		}
 	}
 }

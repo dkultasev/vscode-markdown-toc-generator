@@ -200,12 +200,14 @@
 		"url": "https://github.com/dkultasev/vscode-markdown-toc-generator.git"
 	},
 	"dependencies": {
+		"@types/request-promise-native": "^1.0.16",
 		"child_process": "^1.0.2",
 		"clipboardy": "^1.2.3",
 		"fs": "0.0.1-security",
 		"iconv-lite": "^0.4.24",
 		"path": "^0.12.7",
 		"request": "^2.88.0",
+		"request-promise-native": "^1.0.7",
 		"util": "^0.11.1",
 		"xml2js": "^0.4.19",
 		"xmldom": "^0.1.27"
