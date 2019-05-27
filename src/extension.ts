@@ -513,6 +513,7 @@ class Atlassian {
 			throw (err);
 		}
 	}
+
 	async postRequest(uri: string): Promise<any> {
 		var options = {
 			uri: uri,
@@ -520,6 +521,26 @@ class Atlassian {
 				"Authorization": 'Basic ' + vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianAuthHash')
 			},
 			method: 'POST',
+			json: true
+		};
+
+		try {
+			const result = await request(options);
+			return result;
+		}
+		catch (err) {
+			console.log(err);
+			throw (err);
+		}
+	}
+
+	async putRequest(uri: string): Promise<any> {
+		var options = {
+			uri: uri,
+			headers: {
+				"Authorization": 'Basic ' + vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianAuthHash')
+			},
+			method: 'PUT',
 			json: true
 		};
 
@@ -555,24 +576,33 @@ class Atlassian {
 	}
 
 	async openBambooPlanUrlInBrowser(fileName: string) {
-
 		try {
-			let bambooHost: string | undefined = vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianBambooHost');
-			let planKey = await this.getBambooPlanKey(fileName, bambooHost);
+			var bambooHost: string | undefined = vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianBambooHost'),
+				planKey = await this.getBambooPlanKey(fileName, bambooHost);
 			vscode.env.openExternal(vscode.Uri.parse(`${bambooHost}/browse/${planKey}`));
+			return;
 		}
 		catch (err) {
+			if (err.message === "Cannot read property 'key' of undefined") {
+				try {
+					let plan = await this.createBambooPlan(fileName);
+					vscode.env.openExternal(vscode.Uri.parse(`${bambooHost}/browse/${plan.key}`));
+				} catch (err) {
+					vscode.window.showErrorMessage('Error please check the log');
+					console.log(err);
+					return;
+				}
+			}
 			vscode.window.showErrorMessage('Error please check the log');
 			console.log(err);
 		}
-
-
 	}
+
 	async queueBambooPlan(fileName: string) {
-		let bambooHost: string | undefined = vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianBambooHost');
-		let planKey = await this.getBambooPlanKey(fileName, bambooHost);
-		let uri = `${bambooHost}/rest/api/latest/queue/${planKey}`;
 		try {
+			var bambooHost: string | undefined = vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianBambooHost');
+			let planKey = await this.getBambooPlanKey(fileName, bambooHost);
+			let uri = `${bambooHost}/rest/api/latest/queue/${planKey}`;
 			let response = await this.postRequest(uri);
 			vscode.window.showInformationMessage('Build is queued');
 			return response;
@@ -583,10 +613,35 @@ class Atlassian {
 			}
 			else if (String(err).indexOf('<status-code>404</status-code>') >= 0) {
 				vscode.window.showErrorMessage('Build is not found');
+				await this.createBambooPlan(fileName);
+
+			} else if (err.message === "Cannot read property 'key' of undefined") {
+				let plan = await this.createBambooPlan(fileName);
+				let uri = `${bambooHost}/rest/api/latest/queue/${plan.key}`;
+				let response = await this.postRequest(uri);
+				vscode.window.showInformationMessage('Build is queued');
+				return response;
 			}
 			else {
-				vscode.window.showErrorMessage(String(err));
+				vscode.window.showErrorMessage('Error please check the log');
+				console.log(err);
 			}
+		}
+	}
+
+	async createBambooPlan(fileName: string) {
+		let bambooHost: string | undefined = vscode.workspace.getConfiguration('markdown-table-of-contents').get('atlassianBambooHost'),
+			branchName = await new GIT().getGitBranchFromFileName(fileName),
+			uri = `${bambooHost}/rest/api/latest/plan/MOR-DB/branch/${branchName.replace('/', '-')}?vcsBranch=refs/heads/feature/REPORTREPO-644-remove-delinquency_profiling`;
+
+		try {
+			let response = await this.putRequest(uri);
+			vscode.window.showInformationMessage('Branch plan is created');
+			return response;
+		}
+		catch (err) {
+			vscode.window.showErrorMessage('Error please check the log');
+			console.log(err);
 		}
 	}
 }
