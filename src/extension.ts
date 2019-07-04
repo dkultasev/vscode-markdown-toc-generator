@@ -149,11 +149,9 @@ export function activate(context: vscode.ExtensionContext) {
 			objectNameIndex = 0,
 			splitSize = tmp.length;
 
-		if (tmp[splitSize - 4] === 'Schemas') {
-			schemaIndex = splitSize - 3;
-			objectTypeIndex = splitSize - 2;
-			objectNameIndex = splitSize - 1;
-		}
+		schemaIndex = splitSize - 3;
+		objectTypeIndex = splitSize - 2;
+		objectNameIndex = splitSize - 1;
 
 		let schemaName = tmp[schemaIndex],
 			objectType = tmp[objectTypeIndex].substring(0, tmp[objectTypeIndex].length - 1),
