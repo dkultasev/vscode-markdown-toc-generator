@@ -240,10 +240,14 @@ GO`;
 
 				let branch = await git.getGitBranchFromFileName(editor.document.fileName);
 				let firstDate = await git.execGitCmd('git log --diff-filter=A --follow --format=%aD -1 -- ' + e.document.fileName, editor.document.fileName);
+				let firstMessage = await git.execGitCmd('git log --pretty=medium --diff-filter=A -- ' + e.document.fileName, editor.document.fileName);
 				const name = vscode.workspace.getConfiguration('markdown-table-of-contents').get('userFullName');
-
+				if (firstMessage === null || firstMessage === "") {
+					firstMessage = 'Put your description here';
+				}
 				let gitDate = '';
-				if (String(firstDate).split('\n').length >= 1) {
+				let dateSplitted = String(firstDate).split('\n');
+				if (dateSplitted.length >= 1 && dateSplitted[0].length > 1) {
 					let gitDateArr = String(firstDate).split(' ');
 					gitDate = `${gitDateArr[1]}-${gitDateArr[2]}-${gitDateArr[3]}`;
 				} else {
@@ -263,7 +267,7 @@ GO`;
 created_by: ${name}
 created_date: ${gitDate}
 description: >
-  description
+  ${firstMessage}
 jira_issues:
   - ${regex[0]}
 ...
